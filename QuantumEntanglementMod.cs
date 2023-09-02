@@ -10,6 +10,8 @@ using Il2CppAssets.Scripts;
 using Il2CppAssets.Scripts.Models;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors.Abilities.Behaviors;
+using Il2CppAssets.Scripts.Models.Towers.Weapons;
+using Il2CppAssets.Scripts.Simulation.Objects;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Simulation.Towers.Behaviors.Abilities;
 using Il2CppAssets.Scripts.Simulation.Towers.Behaviors.Abilities.Behaviors;
@@ -20,9 +22,7 @@ using Il2CppSystem.Collections.Generic;
 using MelonLoader;
 using QuantumEntanglement;
 using UnityEngine;
-using UnityEngine.UI;
-
-[assembly:
+using UnityEngine.UI;[assembly:
     MelonInfo(typeof(QuantumEntanglementMod), ModHelperData.Name, ModHelperData.Version, ModHelperData.RepoOwner)]
 [assembly: MelonGame("Ninja Kiwi", "BloonsTD6")]
 
@@ -40,6 +40,19 @@ public class QuantumEntanglementMod : BloonsTD6Mod
 
     private const string ModelName = "QuantumEntangle";
 
+    public static readonly ModSettingBool SuperEntanglement = new(true)
+    {
+        description = "Makes ALL Mutators applied on base towers also apply to their linked towers",
+        icon = VanillaSprites.TotalTransformationUpgradeIcon
+    };
+
+    public static readonly ModSettingBool AbilitiesFix = new(true)
+    {
+        description = "Changes abilities like the Tsar Bomba so that the Wizard Lord Phoenix can make them permanent." +
+                      " Note that most ability visuals / sounds will still not apply.",
+        icon = VanillaSprites.TsarBombaUpgradeIcon
+    };
+
     /// <summary>
     /// Add fake overclock abilities to all towers
     /// </summary>
@@ -47,8 +60,8 @@ public class QuantumEntanglementMod : BloonsTD6Mod
     {
         if (Visualizer) return;
         
-        var entangle = Game.instance.model.GetTower(TowerType.EngineerMonkey, 0, 4, 0).GetDescendant<OverclockModel>()
-            .Duplicate();
+        var entangle = Game.instance.model.GetTower(TowerType.EngineerMonkey, 0, 4).GetDescendant<OverclockModel>()
+            ;
 
         foreach (var tower in gameModel.towers)
         {
@@ -61,6 +74,22 @@ public class QuantumEntanglementMod : BloonsTD6Mod
                     entangle.Duplicate(ModelName)
                 }
             });
+
+            if (AbilitiesFix)
+            {
+                tower.GetDescendants<ActivateAttackModel>().ForEach(activateAttackModel =>
+                {
+                    activateAttackModel.GetDescendants<WeaponModel>().ForEach(weapon =>
+                    {
+                        if (weapon.Rate > 60)
+                        {
+                            weapon.Rate = 2;
+                        }
+                    });
+
+                    activateAttackModel.isOneShot = false;
+                });
+            }
         }
     }
 
@@ -199,6 +228,45 @@ public class QuantumEntanglementMod : BloonsTD6Mod
                 __result = false;
                 return false;
             }
+
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(Tower), nameof(Tower.AddMutator))]
+    internal static class Tower_AddMutator
+    {
+        private static bool midPatch;
+
+        [HarmonyPrefix]
+        private static bool Prefix
+        (
+            Tower __instance, BehaviorMutator mutator,
+            int time,
+            bool updateDuration,
+            bool applyMutation,
+            bool onlyTimeoutWhenActive,
+            bool useRoundTime,
+            bool cascadeMutators,
+            bool includeSubTowers,
+            bool ignoreRecursionCheck,
+            int roundsRemaining,
+            bool isParagonMutator
+        )
+        {
+            if (!SuperEntanglement || midPatch) return true;
+
+            midPatch = true;
+
+            __instance.entity.GetBehaviorsInDependants<Tower>().ForEach(tower =>
+            {
+                tower.AddMutator(mutator, time,
+                    updateDuration, applyMutation, onlyTimeoutWhenActive, useRoundTime, cascadeMutators,
+                    includeSubTowers,
+                    ignoreRecursionCheck, roundsRemaining, isParagonMutator);
+            });
+
+            midPatch = false;
 
             return true;
         }
