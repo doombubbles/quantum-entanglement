@@ -12,12 +12,16 @@ using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Simulation.Towers.Behaviors.Abilities;
 using Il2CppAssets.Scripts.Simulation.Towers.Behaviors.Abilities.Behaviors;
 using Il2CppAssets.Scripts.Unity;
+using Il2CppAssets.Scripts.Unity.Bridge;
 using Il2CppAssets.Scripts.Unity.UI_New.InGame.TowerSelectionMenu;
 using Il2CppSystem.Collections.Generic;
 using MelonLoader;
 using QuantumEntanglement;
+using UnityEngine;
+using UnityEngine.UI;
 
-[assembly: MelonInfo(typeof(QuantumEntanglementMod), ModHelperData.Name, ModHelperData.Version, ModHelperData.RepoOwner)]
+[assembly:
+    MelonInfo(typeof(QuantumEntanglementMod), ModHelperData.Name, ModHelperData.Version, ModHelperData.RepoOwner)]
 [assembly: MelonGame("Ninja Kiwi", "BloonsTD6")]
 
 namespace QuantumEntanglement;
@@ -31,7 +35,8 @@ public class QuantumEntanglementMod : BloonsTD6Mod
     /// </summary>
     public override void OnNewGameModel(GameModel gameModel)
     {
-        var entangle = Game.instance.model.GetTower(TowerType.EngineerMonkey, 0, 4, 0).GetDescendant<OverclockModel>().Duplicate();
+        var entangle = Game.instance.model.GetTower(TowerType.EngineerMonkey, 0, 4, 0).GetDescendant<OverclockModel>()
+            .Duplicate();
 
         foreach (var tower in gameModel.towers)
         {
@@ -184,6 +189,21 @@ public class QuantumEntanglementMod : BloonsTD6Mod
             }
 
             return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(TowerSelectionMenu), nameof(TowerSelectionMenu.SelectTower))]
+    internal static class TowerSelectionMenu_SelectTower
+    {
+        [HarmonyPostfix]
+        private static void Postfix(TowerSelectionMenu __instance, TowerToSimulation tower)
+        {
+            var geraldo = tower.tower?.towerModel?.towerSelectionMenuThemeId == "Geraldo";
+            var abilityButtons =
+                __instance.gameObject.GetComponentInChildrenByName<GridLayoutGroup>("AbilityButtons");
+            abilityButtons.padding.top = geraldo ? 300 : 0;
+            abilityButtons.rectTransform.localScale = Vector3.one * (geraldo ? 1.1f : 1);
+            abilityButtons.SetDirty();
         }
     }
 }
