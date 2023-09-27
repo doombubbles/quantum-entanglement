@@ -1,1 +1,3 @@
-When you push a tag to GitHub, the contents of this file will become your release message
+- Added Abilities Fix setting that changes other abilities like the Tsar Bomba that don't normally work so that the Wizard Lord Phoenix can make them permanent.
+- Added Super Entanglement setting that makes *all* mutators also get applied to linked towers for even more entanglement craziness
+- Added Cache Visualizer debug option to see how the linked entities end up being used within the entity factory

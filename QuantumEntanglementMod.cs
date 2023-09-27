@@ -22,7 +22,8 @@ using Il2CppSystem.Collections.Generic;
 using MelonLoader;
 using QuantumEntanglement;
 using UnityEngine;
-using UnityEngine.UI;[assembly:
+using UnityEngine.UI;
+[assembly:
     MelonInfo(typeof(QuantumEntanglementMod), ModHelperData.Name, ModHelperData.Version, ModHelperData.RepoOwner)]
 [assembly: MelonGame("Ninja Kiwi", "BloonsTD6")]
 
@@ -30,21 +31,7 @@ namespace QuantumEntanglement;
 
 public class QuantumEntanglementMod : BloonsTD6Mod
 {
-    public static readonly ModSettingBool Visualizer = new(false)
-    {
-        description =
-            "Adds a visualizer of the Entity Factory's cache for the purposes of testing out the Total Transformation bug itself. " +
-            "Doing this will disable the abilities, because those add an additional entity to towers and change things slightly.",
-        icon = VanillaSprites.MkOnGreen
-    };
-
     private const string ModelName = "QuantumEntangle";
-
-    public static readonly ModSettingBool SuperEntanglement = new(true)
-    {
-        description = "Makes ALL Mutators applied on base towers also apply to their linked towers",
-        icon = VanillaSprites.TotalTransformationUpgradeIcon
-    };
 
     public static readonly ModSettingBool AbilitiesFix = new(true)
     {
@@ -53,13 +40,27 @@ public class QuantumEntanglementMod : BloonsTD6Mod
         icon = VanillaSprites.TsarBombaUpgradeIcon
     };
 
+    public static readonly ModSettingBool SuperEntanglement = new(false)
+    {
+        description = "Makes ALL Mutators applied on base towers also apply to their linked towers",
+        icon = VanillaSprites.TotalTransformationUpgradeIcon
+    };
+
+    public static readonly ModSettingBool Visualizer = new(false)
+    {
+        description =
+            "Adds a visualizer of the Entity Factory's cache for the purposes of testing out the Total Transformation bug itself. " +
+            "Doing this will disable the abilities, because those add an additional entity to towers and change things slightly.",
+        icon = VanillaSprites.MkOnGreen
+    };
+
     /// <summary>
     /// Add fake overclock abilities to all towers
     /// </summary>
     public override void OnNewGameModel(GameModel gameModel)
     {
         if (Visualizer) return;
-        
+
         var entangle = Game.instance.model.GetTower(TowerType.EngineerMonkey, 0, 4).GetDescendant<OverclockModel>()
             ;
 
@@ -233,6 +234,22 @@ public class QuantumEntanglementMod : BloonsTD6Mod
         }
     }
 
+    [HarmonyPatch(typeof(TowerSelectionMenu), nameof(TowerSelectionMenu.SelectTower))]
+    internal static class TowerSelectionMenu_SelectTower
+    {
+        [HarmonyPostfix]
+        private static void Postfix(TowerSelectionMenu __instance, TowerToSimulation tower)
+        {
+            var geraldo = tower.tower?.towerModel?.towerSelectionMenuThemeId == "Geraldo";
+            var abilityButtons =
+                __instance.gameObject.GetComponentInChildrenByName<GridLayoutGroup>("AbilityButtons");
+            abilityButtons.padding.top = geraldo ? 300 : 0;
+            abilityButtons.rectTransform.localScale = Vector3.one * (geraldo ? 1.1f : 1);
+            abilityButtons.SetDirty();
+        }
+    }
+
+
     [HarmonyPatch(typeof(Tower), nameof(Tower.AddMutator))]
     internal static class Tower_AddMutator
     {
@@ -269,21 +286,6 @@ public class QuantumEntanglementMod : BloonsTD6Mod
             midPatch = false;
 
             return true;
-        }
-    }
-
-    [HarmonyPatch(typeof(TowerSelectionMenu), nameof(TowerSelectionMenu.SelectTower))]
-    internal static class TowerSelectionMenu_SelectTower
-    {
-        [HarmonyPostfix]
-        private static void Postfix(TowerSelectionMenu __instance, TowerToSimulation tower)
-        {
-            var geraldo = tower.tower?.towerModel?.towerSelectionMenuThemeId == "Geraldo";
-            var abilityButtons =
-                __instance.gameObject.GetComponentInChildrenByName<GridLayoutGroup>("AbilityButtons");
-            abilityButtons.padding.top = geraldo ? 300 : 0;
-            abilityButtons.rectTransform.localScale = Vector3.one * (geraldo ? 1.1f : 1);
-            abilityButtons.SetDirty();
         }
     }
 }
