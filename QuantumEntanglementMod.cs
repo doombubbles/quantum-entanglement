@@ -1,7 +1,9 @@
 using System.Linq;
 using BTD_Mod_Helper;
 using BTD_Mod_Helper.Api;
+using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Api.Helpers;
+using BTD_Mod_Helper.Api.ModOptions;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts;
@@ -28,6 +30,14 @@ namespace QuantumEntanglement;
 
 public class QuantumEntanglementMod : BloonsTD6Mod
 {
+    public static readonly ModSettingBool Visualizer = new(false)
+    {
+        description =
+            "Adds a visualizer of the Entity Factory's cache for the purposes of testing out the Total Transformation bug itself. " +
+            "Doing this will disable the abilities, because those add an additional entity to towers and change things slightly.",
+        icon = VanillaSprites.MkOnGreen
+    };
+
     private const string ModelName = "QuantumEntangle";
 
     /// <summary>
@@ -35,6 +45,8 @@ public class QuantumEntanglementMod : BloonsTD6Mod
     /// </summary>
     public override void OnNewGameModel(GameModel gameModel)
     {
+        if (Visualizer) return;
+        
         var entangle = Game.instance.model.GetTower(TowerType.EngineerMonkey, 0, 4, 0).GetDescendant<OverclockModel>()
             .Duplicate();
 
