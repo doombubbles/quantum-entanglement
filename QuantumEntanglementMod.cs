@@ -97,6 +97,19 @@ public class QuantumEntanglementMod : BloonsTD6Mod
     }
 
     /// <summary>
+    /// Don't save other information about the Quantum Entangle ability, can cause issues
+    /// </summary>
+    [HarmonyPatch(typeof(Ability), nameof(Ability.GetSaveMetaData))]
+    internal static class Ability_GetSaveMetaData
+    {
+        [HarmonyPrefix]
+        private static bool Prefix(Ability __instance)
+        {
+            return !__instance.model.name.EndsWith(ModelName);
+        }
+    }
+
+    /// <summary>
     /// Save linked towers
     /// </summary>
     [HarmonyPatch(typeof(Overclock), nameof(Overclock.GetSaveMetaData))]

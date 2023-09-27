@@ -1,1 +1,2 @@
-When you push a tag to GitHub, the contents of this file will become your release message
+- Fixed a crash that could happen on loading a save
+  - Unfortunately if a particular save was crashing before it probably still will be, but new ones no longer will
