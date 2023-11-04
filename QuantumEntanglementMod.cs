@@ -1,13 +1,17 @@
 using System.Linq;
 using BTD_Mod_Helper;
 using BTD_Mod_Helper.Api;
+using BTD_Mod_Helper.Api.Enums;
 using BTD_Mod_Helper.Api.Helpers;
+using BTD_Mod_Helper.Api.ModOptions;
 using BTD_Mod_Helper.Extensions;
 using HarmonyLib;
 using Il2CppAssets.Scripts;
 using Il2CppAssets.Scripts.Models;
 using Il2CppAssets.Scripts.Models.Towers;
 using Il2CppAssets.Scripts.Models.Towers.Behaviors.Abilities.Behaviors;
+using Il2CppAssets.Scripts.Models.Towers.Weapons;
+using Il2CppAssets.Scripts.Simulation.Objects;
 using Il2CppAssets.Scripts.Simulation.Towers;
 using Il2CppAssets.Scripts.Simulation.Towers.Behaviors.Abilities;
 using Il2CppAssets.Scripts.Simulation.Towers.Behaviors.Abilities.Behaviors;
@@ -19,7 +23,6 @@ using MelonLoader;
 using QuantumEntanglement;
 using UnityEngine;
 using UnityEngine.UI;
-
 [assembly:
     MelonInfo(typeof(QuantumEntanglementMod), ModHelperData.Name, ModHelperData.Version, ModHelperData.RepoOwner)]
 [assembly: MelonGame("Ninja Kiwi", "BloonsTD6")]
@@ -30,13 +33,36 @@ public class QuantumEntanglementMod : BloonsTD6Mod
 {
     private const string ModelName = "QuantumEntangle";
 
+    public static readonly ModSettingBool AbilitiesFix = new(true)
+    {
+        description = "Changes abilities like the Tsar Bomba so that the Wizard Lord Phoenix can make them permanent." +
+                      " Note that most ability visuals / sounds will still not apply.",
+        icon = VanillaSprites.TsarBombaUpgradeIcon
+    };
+
+    public static readonly ModSettingBool SuperEntanglement = new(false)
+    {
+        description = "Makes ALL Mutators applied on base towers also apply to their linked towers",
+        icon = VanillaSprites.TotalTransformationUpgradeIcon
+    };
+
+    public static readonly ModSettingBool Visualizer = new(false)
+    {
+        description =
+            "Adds a visualizer of the Entity Factory's cache for the purposes of testing out the Total Transformation bug itself. " +
+            "Doing this will disable the abilities, because those add an additional entity to towers and change things slightly.",
+        icon = VanillaSprites.MkOnGreen
+    };
+
     /// <summary>
     /// Add fake overclock abilities to all towers
     /// </summary>
     public override void OnNewGameModel(GameModel gameModel)
     {
-        var entangle = Game.instance.model.GetTower(TowerType.EngineerMonkey, 0, 4, 0).GetDescendant<OverclockModel>()
-            .Duplicate();
+        if (Visualizer) return;
+
+        var entangle = Game.instance.model.GetTower(TowerType.EngineerMonkey, 0, 4).GetDescendant<OverclockModel>()
+            ;
 
         foreach (var tower in gameModel.towers)
         {
@@ -49,6 +75,22 @@ public class QuantumEntanglementMod : BloonsTD6Mod
                     entangle.Duplicate(ModelName)
                 }
             });
+
+            if (AbilitiesFix)
+            {
+                tower.GetDescendants<ActivateAttackModel>().ForEach(activateAttackModel =>
+                {
+                    activateAttackModel.GetDescendants<WeaponModel>().ForEach(weapon =>
+                    {
+                        if (weapon.Rate > 60)
+                        {
+                            weapon.Rate = 2;
+                        }
+                    });
+
+                    activateAttackModel.isOneShot = false;
+                });
+            }
         }
     }
 
@@ -217,6 +259,46 @@ public class QuantumEntanglementMod : BloonsTD6Mod
             abilityButtons.padding.top = geraldo ? 300 : 0;
             abilityButtons.rectTransform.localScale = Vector3.one * (geraldo ? 1.1f : 1);
             abilityButtons.SetDirty();
+        }
+    }
+
+
+    [HarmonyPatch(typeof(Tower), nameof(Tower.AddMutator))]
+    internal static class Tower_AddMutator
+    {
+        private static bool midPatch;
+
+        [HarmonyPrefix]
+        private static bool Prefix
+        (
+            Tower __instance, BehaviorMutator mutator,
+            int time,
+            bool updateDuration,
+            bool applyMutation,
+            bool onlyTimeoutWhenActive,
+            bool useRoundTime,
+            bool cascadeMutators,
+            bool includeSubTowers,
+            bool ignoreRecursionCheck,
+            int roundsRemaining,
+            bool isParagonMutator
+        )
+        {
+            if (!SuperEntanglement || midPatch) return true;
+
+            midPatch = true;
+
+            __instance.entity.GetBehaviorsInDependants<Tower>().ForEach(tower =>
+            {
+                tower.AddMutator(mutator, time,
+                    updateDuration, applyMutation, onlyTimeoutWhenActive, useRoundTime, cascadeMutators,
+                    includeSubTowers,
+                    ignoreRecursionCheck, roundsRemaining, isParagonMutator);
+            });
+
+            midPatch = false;
+
+            return true;
         }
     }
 }
