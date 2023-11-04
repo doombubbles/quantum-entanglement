@@ -49,7 +49,7 @@ public class QuantumEntanglementMod : BloonsTD6Mod
     public static readonly ModSettingBool Visualizer = new(false)
     {
         description =
-            "Adds a visualizer of the Entity Factory's cache for the purposes of testing out the Total Transformation bug itself. " +
+            "Adds a visualizer of the Entity Factory's cache, previously for the purposes of testing out the Total Transformation bug itself. " +
             "Doing this will disable the abilities, because those add an additional entity to towers and change things slightly.",
         icon = VanillaSprites.MkOnGreen
     };
