@@ -1,4 +1,1 @@
-- Added Abilities Fix setting that changes other abilities like the Tsar Bomba that don't normally work so that the Wizard Lord Phoenix can make them permanent.
-- Added Super Entanglement setting that makes *all* mutators also get applied to linked towers for even more entanglement craziness
-  - This includes sharing alch and village buffs across links, as well as Turbo Charge abilities, and more
-- Added Cache Visualizer debug option to see how the linked entities end up being used within the entity factory
+- Fixed load errors for recent BTD6 versions

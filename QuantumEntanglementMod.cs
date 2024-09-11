@@ -61,8 +61,7 @@ public class QuantumEntanglementMod : BloonsTD6Mod
     {
         if (Visualizer) return;
 
-        var entangle = Game.instance.model.GetTower(TowerType.EngineerMonkey, 0, 4).GetDescendant<OverclockModel>()
-            ;
+        var entangle = Game.instance.model.GetTower(TowerType.EngineerMonkey, 0, 4).GetDescendant<OverclockModel>();
 
         foreach (var tower in gameModel.towers)
         {
