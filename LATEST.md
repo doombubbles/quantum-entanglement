@@ -1,1 +1,1 @@
-- Fixed load errors for recent BTD6 versions
+- Recompiled for BTD6 v45
